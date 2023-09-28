@@ -1,5 +1,6 @@
 import pygame
 import math
+import numpy as np
 import random
 from sys import exit
 
@@ -12,7 +13,7 @@ class Brain:
 
     def randomize(self):
         for i in range(len(self.directions)):
-            randomAngle = 2 * math.pi * random.random()
+            randomAngle = 2*math.pi*random.random()
             self.directions[i] = randomAngle 
 
 class Dot(pygame.sprite.Sprite):
@@ -24,7 +25,7 @@ class Dot(pygame.sprite.Sprite):
         self.brain = Brain(500)
         DOT = 5
         x = WIN_WIDTH/2-DOT/2
-        y = WIN_HEIGHT-50
+        y = WIN_HEIGHT/2-DOT/2
         
         self.move = True
         self.image = pygame.Surface([DOT, DOT])
@@ -36,21 +37,21 @@ class Dot(pygame.sprite.Sprite):
             if len(self.brain.directions) > self.brain.step:
                 angle = self.brain.directions[self.brain.step]
                 self.brain.step += 1
-            
+
                 self.rect.centerx += math.cos(angle) * self.VEL
                 self.rect.centery += math.sin(angle) * self.VEL
 
                 if not (0<= self.rect.centerx <= WIN_WIDTH and 0<= self.rect.centery <= WIN_HEIGHT):
                     self.image.fill('Red')
                     self.move = False
-                    # if self.rect.centerx < 0:
-                    #     self.rect.centerx = 0
-                    # elif self.rect.centerx > WIN_WIDTH:
-                    #     self.rect.centerx = WIN_WIDTH
-                    # elif self.rect.centery < 0:
-                    #     self.rect.centery = 0
-                    # elif self.rect.centery > WIN_HEIGHT:
-                    #     self.rect.centery = WIN_HEIGHT
+                    if self.rect.centerx < 0:
+                        self.rect.centerx = 0
+                    elif self.rect.centerx > WIN_WIDTH:
+                        self.rect.centerx = WIN_WIDTH
+                    elif self.rect.centery < 0:
+                        self.rect.centery = 0
+                    elif self.rect.centery > WIN_HEIGHT:
+                        self.rect.centery = WIN_HEIGHT
 
 class Population():
     def __init__(self, size):

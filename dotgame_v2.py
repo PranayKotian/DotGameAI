@@ -6,16 +6,16 @@ from sys import exit
 class Brain:
     def __init__(self, size):
         self.size = size
-        self.directions = [2*math.pi*random.random() for i in range(self.size)]
+        self.directions = [0 for i in range(self.size)]
         self.step = 0
-        #self.randomize()
+        self.randomize()
 
-    """def randomize(self):
-        self.directions = [2*math.pi*random.random() for i in range(self.size)]
+    def randomize(self):
+        #self.directions = [2*math.pi*random.random() for i in range(self.size)]
 
-        # for d in self.directions:
-        #     randomAngle = 2 * math.pi * random.random()
-        #     d = randomAngle """
+        for i in range(len(self.directions)):
+            randomAngle = 2 * math.pi * random.random()
+            self.directions[i] = randomAngle  
 
     def clone(self):
         clone = Brain(self.size)
@@ -28,20 +28,20 @@ class Brain:
         #LIST COMP W/ IF/ELSE: [f(x) if condition else g(x) for x in sequence]
         #self.directions = [2*math.pi*random.random() if random()<mutationRate else d for d in self.directions]
         
-        for d in self.directions:
-            rand = random()
+        for i in range(len(self.directions)):
+            rand = random.random()
             if rand < mutationRate:
                 #Randomize direction
                 randomAngle = 2 * math.pi * random.random()
-                d = randomAngle
+                self.directions[i] = randomAngle
 
 class Dot:
-    VEL = 5
+    VEL = 10
 
     def __init__(self, goal):
         DOT = 5
-        x = WIN_WIDTH/2-DOT/2
-        y = 100
+        x = WIN_WIDTH*3/4-DOT/2
+        y = WIN_HEIGHT/2
 
         self.image = pygame.Surface([DOT, DOT])
         self.image.fill('Black')
@@ -58,12 +58,12 @@ class Dot:
         self.fitnessSum = 0
         
     def move(self):
-        angle = self.brain.directions[self.brain.step]
-        self.rect.centerx += math.cos(angle) * self.VEL
-        self.rect.centery += math.sin(angle) * self.VEL
-
         if len(self.brain.directions) > self.brain.step:
-            self.brain.step += 1 
+            angle = self.brain.directions[self.brain.step]
+            self.rect.centerx += math.cos(angle) * self.VEL
+            self.rect.centery += math.sin(angle) * self.VEL 
+
+            self.brain.step += 1
         else:
             self.alive = False
 
@@ -79,9 +79,12 @@ class Dot:
             self.image.fill('Red')
     
     def calculateFitness(self, goal):
-        dot = [self.rect.centerx, self.rect.centery]
-        distanceToGoal = math.dist(dot, goal.center)
-        self.fitness = 1.0/(distanceToGoal**2)
+        if self.reachedGoal:
+            self.fitness = 1.0/16.0 + 10000.0/(self.brain.step**2)
+        else:
+            dot = [self.rect.centerx, self.rect.centery]
+            distanceToGoal = math.dist(dot, (WIN_WIDTH/2, 50))
+            self.fitness = 1.0/(distanceToGoal**3)
 
     def createChild(self):
         baby = Dot(self.goal)
@@ -91,6 +94,7 @@ class Dot:
 class Population:
     def __init__(self, size, goal):
         self.dots = []
+        self.size = size
 
         self.fitnessSum = 0
         self.gen = 1
@@ -102,70 +106,71 @@ class Population:
             self.dots.append(dot)
 
     def update(self, win):
-        for d in self.dots:
-            if d.brain.step > self.minStep:
-                d.alive = False
+        for i in range(len(self.dots)):
+            if self.dots[i].brain.step > self.minStep:
+                self.dots[i].alive = False
             
-            d.update()
-            win.blit(d.image, d.rect)
+            self.dots[i].update()
+            win.blit(self.dots[i].image, self.dots[i].rect)
     
     def calculateFitness(self, goal):
-        for d in self.dots:
-            d.calculateFitness(goal)
+        for i in range(len(self.dots)):
+            self.dots[i].calculateFitness(goal)
     
     def allDotsDead(self):
-        for d in self.dots:
-            if d.alive and not d.reachedGoal:
+        for i in range(len(self.dots)):
+            if self.dots[i].alive and not self.dots[i].reachedGoal:
                 return False
         return True
     
     def naturalSelection(self):
-        newDots = []
+        newDots = [0 for i in range(len(self.dots))]
         self.setBestDot()
         self.calculateFitnessSum()
 
-        newDots.append(self.dots[self.bestDot].createChild())
+        newDots[0] = self.dots[self.bestDot].createChild()
         newDots[0].isBest = True
 
-        for i in range(self.size):
+        for i in range(1, len(newDots)):
             #Select parent based on fitness
             parent = self.selectParent()
             #Get baby from parent (i.e. clone parent)
-            newDots.append(parent.createChild())
+            newDots[i] = parent.createChild()
         
         self.dots = newDots.copy()
         self.gen += 1 
+        print(f"generation: {self.gen}")
 
     def calculateFitnessSum(self):
         self.fitnessSum = sum([d.fitness for d in self.dots])
+        print(f"fitness sum: {self.fitnessSum}")
 
     #Randomly returns dot from population (based on fitness)
     def selectParent(self):
-        rand = random(self.fitnessSum)
+        rand = random.random()*self.fitnessSum
         runningSum = 0
 
-        for d in self.dots:
-            runningSum += d.fitness
+        for i in range(len(self.dots)):
+            runningSum += self.dots[i].fitness
             if runningSum > rand:
-                return d
+                return self.dots[i]
     
     def mutateBabies(self):
-        for d in self.dots:
-            d.brain.mutate()
+        for i in range(1, len(self.dots)):
+            self.dots[i].brain.mutate()
 
     def setBestDot(self):
         max = 0.0
         maxIndex = 0
-        for i, d in enumerate(self.dots): 
-            if d.fitness > max:
-                max = d.fitness
+        for i in range(len(self.dots)): 
+            if self.dots[i].fitness > max:
+                max = self.dots[i].fitness
                 maxIndex = i
         
         self.bestDot = maxIndex
 
         if self.dots[self.bestDot].reachedGoal:
             self.minStep = self.dots[self.bestDot].brain.step
-            print(f"step: {self.minStep}")
 
 class Goal:
     def __init__(self, size):
@@ -185,12 +190,6 @@ def main():
     clock = pygame.time.Clock()
     goal = Goal(20)
     pop = Population(1000, goal)
-    
-    if pop.allDotsDead():
-        #Genetic algorithm
-        pop.calculateFitness()
-        pop.naturalSelection()
-        pop.mutateBabies()
 
     run = True
     while run:
@@ -200,12 +199,18 @@ def main():
                 pygame.quit()
                 exit()
         
+        if pop.allDotsDead():
+            #Genetic algorithm
+            pop.calculateFitness(goal)
+            pop.naturalSelection()
+            pop.mutateBabies()
+
         win.fill((94,129,162))
 
         pop.update(win)
         win.blit(goal.image, goal.rect)
 
         pygame.display.update()
-        clock.tick(30)
+        clock.tick(1000)
 
 main()
