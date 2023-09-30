@@ -1,21 +1,14 @@
 import pygame
 import math
 import random
+#import copy
 from sys import exit
 
 class Brain:
     def __init__(self, size):
         self.size = size
-        self.directions = [0 for i in range(self.size)]
+        self.directions = [2*math.pi*random.random() for i in range(self.size)]
         self.step = 0
-        self.randomize()
-
-    def randomize(self):
-        #self.directions = [2*math.pi*random.random() for i in range(self.size)]
-
-        for i in range(len(self.directions)):
-            randomAngle = 2 * math.pi * random.random()
-            self.directions[i] = randomAngle  
 
     def clone(self):
         clone = Brain(self.size)
@@ -26,22 +19,20 @@ class Brain:
         mutationRate = 0.01 #Probability that vector in directions gets changed
 
         #LIST COMP W/ IF/ELSE: [f(x) if condition else g(x) for x in sequence]
-        #self.directions = [2*math.pi*random.random() if random()<mutationRate else d for d in self.directions]
+        self.directions = [2*math.pi*random.random() if random.random()<mutationRate else d for d in self.directions]
         
-        for i in range(len(self.directions)):
-            rand = random.random()
-            if rand < mutationRate:
-                #Randomize direction
-                randomAngle = 2 * math.pi * random.random()
-                self.directions[i] = randomAngle
+        # for i in range(len(self.directions)):
+        #     if random.random() < mutationRate:
+        #         #Randomize direction
+        #         self.directions[i] = 2*math.pi*random.random()
 
 class Dot:
-    VEL = 10
+    VEL = 20
 
     def __init__(self, goal):
         DOT = 5
-        x = WIN_WIDTH*3/4-DOT/2
-        y = WIN_HEIGHT/2
+        x = WIN_WIDTH/2-DOT/2
+        y = WIN_HEIGHT - 100
 
         self.image = pygame.Surface([DOT, DOT])
         self.image.fill('Black')
@@ -73,7 +64,7 @@ class Dot:
             if not (0<= self.rect.centerx <= WIN_WIDTH and 0<= self.rect.centery <= WIN_HEIGHT):
                 self.alive = False
             elif pygame.Rect.colliderect(self.rect, self.goal.rect):
-                self.image.fill('Green')
+                self.image.fill('Dark Green')
                 self.reachedGoal = True
         elif not self.alive:
             self.image.fill('Red')
@@ -175,7 +166,7 @@ class Population:
 class Goal:
     def __init__(self, size):
         self.image = pygame.Surface([size, size])
-        self.image.fill('Light Green')
+        self.image.fill('Green')
         self.center = (WIN_WIDTH/2, 50)
         self.rect = self.image.get_rect(center=self.center)
 
@@ -205,12 +196,12 @@ def main():
             pop.naturalSelection()
             pop.mutateBabies()
 
-        win.fill((94,129,162))
+        win.fill("Light Grey")
 
         pop.update(win)
         win.blit(goal.image, goal.rect)
 
         pygame.display.update()
-        clock.tick(1000)
+        clock.tick(100)
 
 main()
